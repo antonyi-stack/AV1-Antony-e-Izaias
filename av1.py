@@ -4,10 +4,10 @@ from datetime import date
 class ErroDeMedicamento(Exception):
 	pass
 
-class QuantidadeInvalidaError(ErroDeMedicamento): 
+class QuantidadeInvalidaError(Exception): 
 	pass
 
-class MedicamentoVencidoError(ErroDeMedicamento): 
+class MedicamentoVencidoError(Exception): 
 	pass
 
 class Medicamento:
@@ -54,7 +54,7 @@ class Medicamento:
 		# return cls(nome, lote, date(int[d], int[m], date[a]), int(quantidade), float(valor))
 
 	@staticmethod
-	def dias_para_vencer(validade: date) -> date:
+	def dias_para_vencer(validade: date) -> int:
 		hoje = date.today()
 		return (validade - hoje).days
 	
@@ -63,36 +63,29 @@ class Medicamento:
 		return f"{self.nome} ({self.lote}) - {self.quantidade} un. - val. {validade_formatada}"
 
 	def __repr__(self) -> str: 
-			return(
-
-		f"Medicamento(nome={self.nome!r}, lote={self.lote!r}," 
-		f"validade={self.validade!r}, qauntidade=f{self.quantidade!r}, valor=f{self.valor!r})"
+			return(f"Medicamento(nome={self.nome!r}, lote={self.lote!r}," 
+		f"validade={self.validade!r}, quantidade={self.quantidade!r}, valor={self.valor!r})"
 		)
 
 	def __eq__(self, outro: object) -> bool:
-			if not isinstance(outro, Medicamento):
-				return NotImplemented
-			return self.nome.lower() == outro.nome and self.lote == outro.lote
+		if not isinstance(outro, Medicamento):
+			return NotImplemented
+		return self.nome.lower() == outro.nome.lower() and self.lote == outro.lote
 
-	def __it__(self, outro: Medicamento) -> bool:
-			if not isinstance(outro, Medicamento):
-				return NotImplemented 
-				return self.validade < outro.validade
+	def __lt__(self, outro: Medicamento) -> bool:
+		if not isinstance(outro, Medicamento):
+			return NotImplemented 
+		return self.validade < outro.validade
 
-	def dispensar (self, quantidade: int, validade: date) -> None:
-			if quantidade <= 0 or quantidade > quantidade:
-				raise
-			QuantidadeInvalidaError(
-				quantidade
-			)
-			if validade < date.today():
-				raise 
-			MedicamentoVencidoError(
-				validade
-			)
-			quantidade -= quantidade
+	def dispensar (self, quantidade: int) -> None:
+			if quantidade <= 0 or quantidade > self.quantidade:
+				raise QuantidadeInvalidaError(quantidade)
+			if self.validade < date.today():
+				raise MedicamentoVencidoError(self.validade)
+			self.quantidade -= quantidade
+
 	def repor(self, quantidade: int) -> None:
-			quantidade += quantidade
+			self.quantidade += quantidade
 
 
 if __name__ == "__main__":
@@ -102,18 +95,19 @@ if __name__ == "__main__":
 	print(f"Dados de m2: {m2}") # ex.: Amoxicilina 500mg (L2026B) - 40 un. - val. 15/10/2026
 	print(f"Dias para vencer de m2: {Medicamento.dias_para_vencer(m2.validade)}")
 	print("Dispensando 20 medicamentos de m1")
-	m1.dispensar(20, 12/2026)
+	m1.dispensar(20)
 	print(f"Quantidade de m1: {m1.quantidade}")
-try:
-	m2.dispensar(999)
-except QuantidadeInvalidaError as erro:
-	print(f"Erro esperado: {erro}")
+
+	try:
+		m2.dispensar(999)
+	except QuantidadeInvalidaError as erro:
+		print(f"Erro esperado: {erro}")
 
 	vencido = Medicamento("Soro Fisiológico", "L2025X", date(2025, 1, 10), 10, 5.0)
-try:
-	vencido.dispensar(1)
-except MedicamentoVencidoError as erro:
-	print(f"Erro esperado: {erro}")
+	try:
+		vencido.dispensar(1)
+	except MedicamentoVencidoError as erro:
+		print(f"Erro esperado: {erro}")
 
 	outro = Medicamento("Dipirona 500mg", "L2026A", date(2026, 1, 1), 0, 1.0)
 	print(f"m1 é igual a outro? {m1 == outro}")
@@ -123,8 +117,8 @@ except MedicamentoVencidoError as erro:
 	for lote in sorted(estoque):
 		print(lote)
 
-try:
-	m1.quantidade = -5
-except ValueError as erro:
-	print(f"Erro esperado: {erro}")
+	try:
+		m1.quantidade = -5
+	except ValueError as erro:
+		print(f"Erro esperado: {erro} é inválido")
 
